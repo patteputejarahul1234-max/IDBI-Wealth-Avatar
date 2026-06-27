@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDBI Wealth Avatar Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo">IDBI WEALTH</div>
+            <nav>
+                <a href="#" class="nav-btn active" onclick="switchTab('dashboard')">Dashboard</a>
+                <a href="#" class="nav-btn" onclick="switchTab('analytics')">Analytics</a>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header>
+                <h1>Welcome Back, <span id="username">User</span></h1>
+                <p>Track your financial journey and avatar progression.</p>
+            </header>
+            <div id="budget-alert" class="alert-banner hidden">
+                ⚠️ <strong>Budget Alert:</strong> You have exceeded your safe monthly spending limit!
+            </div>
+            <div id="dashboard-tab" class="tab-content">
+                <div class="grid-layout">
+                    <div class="card avatar-card">
+                        <h3>Your Active Avatar</h3>
+                        <div class="avatar-badge" id="avatar-icon">🌱</div>
+                        <h2 id="avatar-name">Loading...</h2>
+                        <span id="profile-badge" class="badge">Dynamic Profile</span>
+                    </div>
+                    <div class="card metrics-card">
+                        <h3>Financial Status</h3>
+                        <div class="metric">
+                            <span class="label">Current Wealth:</span>
+                            <span class="value" id="current-wealth">₹0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="label">Financial Goal:</span>
+                            <span class="value" id="financial-goal">₹0</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="goal-progress-bar" style="width: 0%;"></div>
+                        </div>
+                        <p class="progress-text" id="goal-progress-text">0% of goal achieved</p>
+                    </div>
+                    <div class="card action-card">
+                        <h3>Smart Budget Track</h3>
+                        <p>Simulate an expense to check your live alert system:</p>
+                        <div class="form-group">
+                            <input type="number" id="expense-amount" placeholder="Enter expense amount (₹)">
+                            <button onclick="checkBudgetLimit()">Check Alert</button>
+                        </div>
+                        <p id="expense-status-text" style="margin-top: 10px; font-size: 14px; color: #666;"></p>
+                    </div>
+                </div>
+            </div>
+            <div id="analytics-tab" class="tab-content hidden">
+                <div class="grid-layout">
+                    <div class="card chart-card">
+                        <h3>Wealth Breakdown Analytics</h3>
+                        <div class="chart-placeholder-container">
+                            <div class="bar-chart-mock">
+                                <div class="mock-bar bar-1" style="height: 40%;"><span>Investments</span></div>
+                                <div class="mock-bar bar-2" style="height: 85%;"><span>Savings</span></div>
+                                <div class="mock-bar bar-3" style="height: 25%;"><span>Expenses</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+        }
+        function checkBudgetLimit() {
+            const amountInput = document.getElementById('expense-amount');
+            const statusText = document.getElementById('expense-status-text');
+            const alertBanner = document.getElementById('budget-alert');
+            const amount = parseFloat(amountInput.value);
+            if (isNaN(amount) || amount <= 0) {
+                statusText.innerText = "Please enter a valid expense amount.";
+                statusText.style.color = "#e74c3c";
+                return;
+            }
+            if (amount > 10000) {
+                alertBanner.classList.remove('hidden');
+                statusText.innerText = `⚠️ Expense of ₹${amount.toLocaleString('en-IN')} exceeds your safe budget threshold!`;
+                statusText.style.color = "#e74c3c";
+            } else {
+                alertBanner.classList.add('hidden');
+                statusText.innerText = `✅ Expense of ₹${amount.toLocaleString('en-IN')} is within your safe budget zone.`;
+                statusText.style.color = "#2ecc71";
+            }
+        }
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("Contacting Spring Boot Backend on Port 8080...");
+            fetch('http://localhost:8080/api/users/1/profile')
+                .then(response => {
+                    if (!response.ok) throw new Error("Backend server unavailable");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Live connection data retrieved:", data);
+                    document.getElementById('username').innerText = data.user.fullName;
+                    document.getElementById('avatar-name').innerText = data.avatar.avatarName;
+                    const badge = document.getElementById('profile-badge');
+                    badge.innerText = `${data.avatar.riskProfile} Profile`;
+                    badge.style.backgroundColor = "#e74c3c"; // Crimson red styling for Aggressive
+                    badge.style.color = "#ffffff";
+                    const wealth = data.avatar.currentWealth;
+                    const goal = data.avatar.financialGoal;
+                    document.getElementById('current-wealth').innerText = `₹${wealth.toLocaleString('en-IN')}`;
+                    document.getElementById('financial-goal').innerText = `₹${goal.toLocaleString('en-IN')}`;
+                    const percentage = Math.min(Math.round((wealth / goal) * 100), 100);
+                    const progressBar = document.getElementById('goal-progress-bar');
+                    progressBar.style.width = `${percentage}%`;
+                    progressBar.style.backgroundColor = "#2ecc71";
+                    document.getElementById('goal-progress-text').innerText = `${percentage}% of goal achieved`;
+                })
+                .catch(err => {
+                    console.error("Using interface safe defaults. Connection error:", err.message);
+                    document.getElementById('username').innerText = "Teja Rahul";
+                    document.getElementById('avatar-name').innerText = "Growth Champion";
+                    document.getElementById('profile-badge').innerText = "Aggressive Profile";
+                    document.getElementById('current-wealth').innerText = "₹50,000";
+                    document.getElementById('financial-goal').innerText = "₹15,000,000";
+                    document.getElementById('goal-progress-bar').style.width = "3.3%";
+                    document.getElementById('goal-progress-text').innerText = "3.3% of goal achieved";
+                });
+        });
+    </script>
+</body>
+</html>
